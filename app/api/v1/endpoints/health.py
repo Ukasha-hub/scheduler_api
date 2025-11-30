@@ -1,0 +1,1 @@
+# Purpose: Health check endpoint
