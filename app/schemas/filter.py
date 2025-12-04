@@ -17,3 +17,7 @@ class FilterRead(FilterBase):
 class FilterDeleteResponse(BaseModel):
     success: bool
     message: str
+
+class FilterUpdate(BaseModel):
+    type: str
+    color: str
