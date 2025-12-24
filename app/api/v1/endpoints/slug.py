@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.slug import Slug
 from app.schemas.slug import SlugCreate, SlugRead, SlugUpdate
+from app.utils.logger import log_action
 
 router = APIRouter()
 
@@ -28,6 +29,7 @@ def create_slug(payload: SlugCreate, db: Session = Depends(get_db)):
     db.add(new)
     db.commit()
     db.refresh(new)
+    log_action(db, emp_id="101", action=f"Created new slug, name: {payload.programe_name}, slug:{payload.slug}, slug_repeat:{payload.slug_repeat}")
     return new
 
 # -----------------------------
@@ -45,7 +47,7 @@ def update_slug(id: int, payload: SlugUpdate, db: Session = Depends(get_db)):
 
     db.commit()
     db.refresh(item)
-
+    log_action(db, emp_id="101", action=f"Updated slug to name: {payload.programe_name}, slug:{payload.slug}, slug_repeat:{payload.slug_repeat}")
     return item
 
 # -----------------------------
@@ -59,5 +61,5 @@ def delete_slug(id: int, db: Session = Depends(get_db)):
 
     db.delete(item)
     db.commit()
-
+    log_action(db, emp_id="101", action=f"Deleted programme name: {item.programe_name}")
     return {"detail": "Deleted successfully"}

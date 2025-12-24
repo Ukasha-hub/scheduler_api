@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.server import Server
 from app.schemas.server import ServerCreate, ServerRead, ServerUpdate
+from app.utils.logger import log_action
 
 router = APIRouter(prefix="/servers", tags=["Servers"])
 
@@ -28,6 +29,7 @@ def create_server(payload: ServerCreate, db: Session = Depends(get_db)):
     db.add(new_server)
     db.commit()
     db.refresh(new_server)
+    log_action(db, emp_id="101", action=f"New server created: serber:{payload.server}, ip1:{payload.ip1}, ip2:{payload.ip2}")
     return new_server
 
 # --------------------
@@ -46,6 +48,7 @@ def update_server(id: int, payload: ServerUpdate, db: Session = Depends(get_db))
 
     db.commit()
     db.refresh(server_item)
+    log_action(db, emp_id="101", action=f"Updated server: server:{payload.server}, ip1:{payload.ip1}, ip2:{payload.ip2}")
     return server_item
 
 # --------------------
@@ -60,5 +63,5 @@ def delete_server(id: int, db: Session = Depends(get_db)):
 
     db.delete(server_item)
     db.commit()
-
+    log_action(db, emp_id="101", action=f"Deleted server: {server_item.server}")
     return {"detail": "Server deleted successfully"}

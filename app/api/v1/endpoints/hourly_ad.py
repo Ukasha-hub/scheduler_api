@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.hourly_ad import HourlyAdSetting
 from app.schemas.hourly_ad import HourlyAdCreate, HourlyAdRead, HourlyAdUpdate
+from app.utils.logger import log_action
 
 router = APIRouter()
 
@@ -40,4 +41,6 @@ def save_hourly_ad_settings(payload: HourlyAdCreate, db: Session = Depends(get_d
     db.add(new_settings)
     db.commit()
     db.refresh(new_settings)
+    log_action(db, emp_id="101", action=f"Updated hourly interval to {payload.hourly_interval}")
+
     return new_settings

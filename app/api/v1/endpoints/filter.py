@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.schemas.filter import FilterCreate, FilterRead, FilterDeleteResponse, FilterUpdate
 from app.models.filter import Filter
+from app.utils.logger import log_action
 
 router = APIRouter()
 
@@ -15,6 +16,7 @@ def create_filter(payload: FilterCreate, db: Session = Depends(get_db)):
     db.add(db_obj)
     db.commit()
     db.refresh(db_obj)
+    log_action(db, emp_id="101", action=f"Created filter: {payload.type}, {payload.color}")
     return db_obj
 
 # Get all filters
@@ -26,13 +28,14 @@ def get_filters(db: Session = Depends(get_db)):
 
 # Delete filter by ID using schema
 @router.delete("/{filter_id}", response_model=FilterDeleteResponse)
-def delete_filter(filter_id: int, db: Session = Depends(get_db)):
+def delete_filter( filter_id: int, db: Session = Depends(get_db)):
     db_obj = db.query(Filter).filter(Filter.id == filter_id).first()
     if not db_obj:
         return FilterDeleteResponse(success=False, message="Filter not found")
-    
+   
     db.delete(db_obj)
     db.commit()
+    log_action(db, emp_id="101", action=f"Deleted a filter: type:{db_obj.type} color:{db_obj.color} ")
     return FilterDeleteResponse(success=True, message=f"Filter with id {filter_id} deleted")     
 
 # Update filter
@@ -47,5 +50,5 @@ def update_filter(filter_id: int, payload: FilterUpdate, db: Session = Depends(g
 
     db.commit()
     db.refresh(db_obj)
-
+    log_action(db, emp_id="101", action=f"Updated filter to: type:{payload.type}, color:{payload.color}")
     return db_obj

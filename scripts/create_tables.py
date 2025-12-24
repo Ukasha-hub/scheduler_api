@@ -7,7 +7,9 @@ from app.models.privilege import Privilege
 from app.models.server import Server
 from app.models.slug import Slug
 from app.models.hourly_ad import HourlyAdSetting 
-from app.models.package import Package  # Import all models you want to create
+from app.models.package import Package 
+from app.models.schedulerSettings import Scheduler 
+from app.models.history import History  # Import all models you want to create
 
 # This will create the table(s) in PostgreSQL
 Base.metadata.create_all(bind=engine)

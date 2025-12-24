@@ -10,6 +10,7 @@ from fastapi import HTTPException
 import json
 from sqlalchemy.ext.mutable import MutableList
 from sqlalchemy import JSON
+from app.utils.logger import log_action
 
 router = APIRouter()
 
@@ -41,6 +42,7 @@ def save_package(payload: PackageCreate, db: Session = Depends(get_db)):
     db.add(new_pkg)
     db.commit()
     db.refresh(new_pkg)
+    log_action(db, emp_id="101", action=f"New package {payload.name} created with items {payload.items}")
     return new_pkg
 
 
@@ -67,6 +69,7 @@ def update_package(package_id: int, payload: PackagePatch, db: Session = Depends
 
     db.commit()
     db.refresh(pkg)
+    log_action(db, emp_id="101", action=f"New items {new_items} add in {payload.name}")
     return pkg
 
 @router.delete("/{package_id}/item/{item_id}", response_model=PackageRead)
@@ -88,6 +91,7 @@ def delete_package_item(package_id: int, item_id: str, db: Session = Depends(get
 
     db.commit()
     db.refresh(pkg)
+    log_action(db, emp_id="101", action=f"Items {pkg.items} remains after deleting from package {pkg.name}")
     return pkg
 
 @router.delete("/{package_id}", response_model=dict)
@@ -99,5 +103,5 @@ def delete_package(package_id: int, db: Session = Depends(get_db)):
 
     db.delete(pkg)
     db.commit()
-
+    log_action(db, emp_id="101", action=f"Package {pkg.name} deleted")
     return {"message": "Package deleted successfully", "id": package_id}

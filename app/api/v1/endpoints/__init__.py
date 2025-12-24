@@ -6,6 +6,8 @@ from .server import router as server_router
 from .slug import router as slug_router 
 from .hourly_ad import router as hourly_ad_router 
 from .package import router as package_router 
+from .schedulerSettings import router as schedulerSettings_router 
+from .history import router as history_router 
 
 router = APIRouter()
 
@@ -15,3 +17,5 @@ router.include_router(server_router, prefix="/server", tags=["Servers"])
 router.include_router(slug_router, prefix="/slug", tags=["Slug"])
 router.include_router(hourly_ad_router, prefix="/hourly-ad", tags=["Hourly Ad"])
 router.include_router(package_router, prefix="/package", tags=["Packages"])
+router.include_router(schedulerSettings_router , prefix="/schedulerSettings", tags=["Scheduler Settings"])
+router.include_router(history_router , prefix="/history", tags=["History"])
