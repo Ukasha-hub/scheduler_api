@@ -12,6 +12,8 @@ from app.core.default_privileges import DEFAULT_PRIVILEGES
 from app.schemas.user import UserCreate, UserRead
 from app.schemas.privilege import PrivilegeCreate, PrivilegeBase
 from app.schemas.userwithprivilege import UserWithPrivileges
+from app.services.storage.db_lock import execute_with_table_lock
+import time
 
 router = APIRouter(prefix="/users")
 

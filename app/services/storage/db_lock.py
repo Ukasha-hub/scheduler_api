@@ -14,7 +14,7 @@ def execute_with_table_lock(
         #db.execute(text("SET lock_timeout = '5s'"))
 
         # Lock table
-        db.execute(text("LOCK TABLE hourly_ad_settings IN EXCLUSIVE MODE"))
+        db.execute(text(f"LOCK TABLE {table_name}  IN EXCLUSIVE MODE"))
 
         # Execute the business logic
         result = operation()

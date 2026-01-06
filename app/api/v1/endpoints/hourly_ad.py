@@ -32,11 +32,12 @@ def get_hourly_ad_settings(db: Session = Depends(get_db)):
 def save_hourly_ad_settings(payload: HourlyAdCreate, db: Session = Depends(get_db)):
     def operation():
         settings = db.query(HourlyAdSetting).first()
-        time.sleep(20)  
+        #time.sleep(20)  
         if settings:
             # UPDATE
             settings.hourly_interval = payload.hourly_interval
             db.flush()
+            #raise Exception("test rollback")
             log_action(
                 db,
                 emp_id="101",
@@ -48,6 +49,7 @@ def save_hourly_ad_settings(payload: HourlyAdCreate, db: Session = Depends(get_d
         new_settings = HourlyAdSetting(hourly_interval=payload.hourly_interval)
         db.add(new_settings)
         db.flush()
+        #raise Exception("test rollback")
         log_action(db, emp_id="101", action=f"Updated hourly interval to {payload.hourly_interval}")
 
         return new_settings
