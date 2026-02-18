@@ -17,6 +17,16 @@ import time
 
 router = APIRouter()
 
+def normalize_items(items: list[dict]) -> list[dict]:
+    normalized = []
+
+    for item in items:
+        if "id" in item:
+            item = {**item, "id": str(item["id"])}
+        normalized.append(item)
+
+    return normalized
+
 # Get all packages
 @router.get("/", response_model=list[PackageRead])
 def get_packages(db: Session = Depends(get_db)):
@@ -40,7 +50,7 @@ def save_package(payload: PackageCreate, db: Session = Depends(get_db)):
         # Create new package
         new_pkg = Package(
             name=payload.name,
-            items=payload.items
+            items=normalize_items(payload.items)
         )
         db.add(new_pkg)
         db.flush()
@@ -70,7 +80,14 @@ def update_package(package_id: int, payload: PackagePatch, db: Session = Depends
 
             # Avoid duplicates
             existing_ids = {item["id"] for item in pkg.items}
-            new_items = [item for item in payload.items if item["id"] not in existing_ids]
+
+            incoming_items = normalize_items(payload.items)
+            
+            new_items = [
+                            item for item in incoming_items
+                            if item["id"] not in existing_ids
+                        ]
+
 
             # Assign a new list to trigger SQLAlchemy change tracking
             pkg.items = pkg.items + new_items

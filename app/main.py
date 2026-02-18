@@ -9,7 +9,9 @@ app = FastAPI()
 # Allow React frontend to talk to FastAPI
 origins = [
     "http://localhost:3000",
-    "http://172.16.9.132:3000",   # or your frontend URL
+    "http://localhost:3001",
+    "http://172.16.9.132:3000", 
+    "http://172.16.9.132:3001",  # or your frontend URL
 ]
 
 app.add_middleware(
