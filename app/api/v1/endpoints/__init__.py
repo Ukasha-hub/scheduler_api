@@ -9,6 +9,7 @@ from .package import router as package_router
 from .schedulerSettings import router as schedulerSettings_router 
 from .history import router as history_router 
 from .schedule import router as schedule_router 
+from .resourcespace import router as resourcespace_router 
 
 router = APIRouter()
 
@@ -21,3 +22,4 @@ router.include_router(package_router, prefix="/package", tags=["Packages"])
 router.include_router(schedulerSettings_router , prefix="/schedulerSettings", tags=["Scheduler Settings"])
 router.include_router(history_router , prefix="/history", tags=["History"])
 router.include_router(schedule_router , prefix="/schedule", tags=["Schedule"])
+router.include_router(resourcespace_router , prefix="/resourcespace", tags=["resourcespace"])
