@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from app.utils.logger import log_action
 from typing import List
+from app.services.storage.db_lock import execute_with_table_lock
 
 from app.db.session import get_db
 from app.models.schedule import Schedule
@@ -51,54 +53,80 @@ def get_schedule(schedule_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=ScheduleRead)
-def create_schedule(payload: ScheduleCreate, db: Session = Depends(get_db)):
+def create_schedule(
+    payload: ScheduleCreate,
+    emp_id: str = Query(...),
+    db: Session = Depends(get_db)
+):
     obj = Schedule(
-    **payload.model_dump(),
-    schedule_date=payload.start_time.date()
+        **payload.model_dump(),
+        schedule_date=payload.start_time.date()
     )
+
     db.add(obj)
     db.commit()
     db.refresh(obj)
+
+    log_action(
+        db,
+        emp_id=emp_id,
+        action=f"Created schedule {obj.client_id} - {obj.name}"
+    )
+
     return obj
 
 @router.post("/sync", response_model=List[ScheduleRead])
 def sync_day_schedules(
     date: date,
     rows: List[ScheduleCreate],
+    emp_id: str = Query(...),
+    action: str = Query(...),
     db: Session = Depends(get_db)
 ):
-    existing = {
-        s.client_id: s
-        for s in db.query(Schedule)
-        .filter(Schedule.schedule_date == date)
-        .all()
-    }
+    def operation():
+        existing = {
+            s.client_id: s
+            for s in db.query(Schedule)
+            .filter(Schedule.schedule_date == date)
+            .all()
+        }
 
-    incoming_ids = set()
+        incoming_ids = set()
 
-    for row in rows:
-        incoming_ids.add(row.client_id)
+        for row in rows:
+            incoming_ids.add(row.client_id)
 
-        if row.client_id in existing:
-            obj = existing[row.client_id]
-            for field, value in row.model_dump().items():
-                setattr(obj, field, value)
-        else:
-            obj = Schedule(**row.model_dump(), schedule_date=date)
-            db.add(obj)
+            if row.client_id in existing:
+                obj = existing[row.client_id]
+                for field, value in row.model_dump().items():
+                    setattr(obj, field, value)
+            else:
+                obj = Schedule(**row.model_dump(), schedule_date=date)
+                db.add(obj)
 
-    # delete removed rows
-    for client_id, obj in existing.items():
-        if client_id not in incoming_ids:
-            db.delete(obj)
+        for client_id, obj in existing.items():
+            if client_id not in incoming_ids:
+                db.delete(obj)
 
-    db.commit()
+        db.flush()
 
-    return (
-        db.query(Schedule)
-        .filter(Schedule.schedule_date == date)
-        .order_by(Schedule.start_time)
-        .all()
+        log_action(
+            db,
+            emp_id=emp_id,
+            action=action
+        )
+
+        return (
+            db.query(Schedule)
+            .filter(Schedule.schedule_date == date)
+            .order_by(Schedule.start_time)
+            .all()
+        )
+
+    return execute_with_table_lock(
+        db=db,
+        table_name="schedules",
+        operation=operation,
     )
 
 
@@ -108,94 +136,64 @@ def sync_day_schedules(
 def update_schedule_by_client_id(
     client_id: int,
     payload: ScheduleUpdate,
+    emp_id: str = Query(...),
     db: Session = Depends(get_db),
 ):
-    obj = db.query(Schedule).filter(Schedule.client_id == client_id).first()
-    if not obj:
-        raise HTTPException(status_code=404, detail="Schedule not found")
+    def operation():
+        obj = db.query(Schedule).filter(Schedule.client_id == client_id).first()
+        if not obj:
+            raise HTTPException(status_code=404, detail="Schedule not found")
 
-    for field, value in payload.model_dump(exclude_unset=True).items():
-        setattr(obj, field, value)
+        for field, value in payload.model_dump(exclude_unset=True).items():
+            setattr(obj, field, value)
 
-    if payload.start_time and payload.end_time and payload.duration:
-        validate_duration(payload.start_time, payload.end_time, payload.duration)
+        if payload.start_time and payload.end_time and payload.duration:
+            validate_duration(payload.start_time, payload.end_time, payload.duration)
 
-    db.commit()
-    db.refresh(obj)
-    return obj
+        db.flush()
+
+        log_action(
+            db,
+            emp_id=emp_id,
+            action=f"Updated schedule {client_id}"
+        )
+
+        return obj
+
+    return execute_with_table_lock(
+        db=db,
+        table_name="schedules",
+        operation=operation,
+    )
 
 
 @router.delete("/{client_id}")
 def delete_schedule_by_client_id(
     client_id: int,
+    
     db: Session = Depends(get_db)
 ):
-    obj = db.query(Schedule).filter(Schedule.client_id == client_id).first()
-    if not obj:
-        raise HTTPException(status_code=404, detail="Schedule not found")
+    def operation():
+        obj = db.query(Schedule).filter(Schedule.client_id == client_id).first()
+        if not obj:
+            raise HTTPException(status_code=404, detail="Schedule not found")
 
-    db.delete(obj)
-    db.commit()
-    return {"success": True}
+        db.delete(obj)
+        db.flush()
 
+       
 
-@router.delete("/bulk")
-def bulk_delete_by_client_id(
-    payload: ScheduleBulkDelete,
-    db: Session = Depends(get_db)
-):
-    rows = (
-        db.query(Schedule)
-        .filter(Schedule.client_id.in_(payload.client_ids))
-        .all()
+        return {"success": True}
+
+    return execute_with_table_lock(
+        db=db,
+        table_name="schedules",
+        operation=operation,
     )
 
-    for row in rows:
-        db.delete(row)
-
-    db.commit()
-    return {"deleted": len(rows)}
 
 
 
-@router.put("/reorder", response_model=List[ScheduleRead])
-def reorder_day_schedules(
-    payload: ScheduleReorderRequest,
-    db: Session = Depends(get_db)
-):
-    schedules = {
-        s.client_id: s
-        for s in db.query(Schedule)
-        .filter(Schedule.schedule_date == payload.date.date())
-        .all()
-    }
 
-    current_time = payload.start_time
 
-    for row in payload.rows:
-        if row.client_id not in schedules:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Schedule {row.client_id} not found"
-            )
 
-        obj = schedules[row.client_id]
-
-        # parse duration
-        h, m, s, _ = map(int, row.duration.split(":"))
-        duration_delta = timedelta(hours=h, minutes=m, seconds=s)
-
-        obj.start_time = current_time
-        obj.end_time = current_time + duration_delta
-        obj.duration = row.duration
-
-        current_time = obj.end_time
-
-    db.commit()
-
-    return (
-        db.query(Schedule)
-        .filter(Schedule.schedule_date == payload.date.date())
-        .order_by(Schedule.start_time)
-        .all()
-    )

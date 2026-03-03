@@ -24,6 +24,12 @@ class SchedulerCreate(SchedulerBase):
 class SchedulerUpdate(SchedulerBase):
     pass
 
+class SchedulerCreateWithUser(SchedulerCreate):
+    emp_id: Optional[str] = None 
+
+class DeleteScheduleRequest(BaseModel):
+    emp_id: Optional[str] = None
+    
 class SchedulerRead(SchedulerBase):
     id: int
 

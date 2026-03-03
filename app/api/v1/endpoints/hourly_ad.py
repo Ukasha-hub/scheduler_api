@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException , Query
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -29,19 +29,23 @@ def get_hourly_ad_settings(db: Session = Depends(get_db)):
 # CREATE or UPDATE settings
 # -------------------------------------------------
 @router.post("/", response_model=HourlyAdRead)
-def save_hourly_ad_settings(payload: HourlyAdCreate, db: Session = Depends(get_db)):
+def save_hourly_ad_settings(
+    payload: HourlyAdCreate,
+    emp_id: str = Query(...),
+    db: Session = Depends(get_db)
+):
     def operation():
         settings = db.query(HourlyAdSetting).first()
-        #time.sleep(20)  
+
         if settings:
             # UPDATE
+            old_val = settings.hourly_interval
             settings.hourly_interval = payload.hourly_interval
             db.flush()
-            #raise Exception("test rollback")
             log_action(
                 db,
-                emp_id="101",
-                action=f"Updated hourly interval to {payload.hourly_interval}"
+                emp_id=emp_id,
+                action=f"Updated hourly interval from {old_val} → {payload.hourly_interval}"
             )
             return settings
 
@@ -49,11 +53,13 @@ def save_hourly_ad_settings(payload: HourlyAdCreate, db: Session = Depends(get_d
         new_settings = HourlyAdSetting(hourly_interval=payload.hourly_interval)
         db.add(new_settings)
         db.flush()
-        #raise Exception("test rollback")
-        log_action(db, emp_id="101", action=f"Updated hourly interval to {payload.hourly_interval}")
-
+        log_action(
+            db,
+            emp_id=emp_id,
+            action=f"Created hourly interval: {payload.hourly_interval}"
+        )
         return new_settings
-     
+
     return execute_with_table_lock(
         db=db,
         table_name="hourly_ad_settings",
