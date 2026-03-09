@@ -14,6 +14,8 @@ from .razuna import router as razuna_router
 from .scheduler import router as scheduler_router 
 from .media import router as media_router 
 
+
+
 router = APIRouter()
 
 router.include_router(filter_router, prefix="/filters", tags=["Filters"])
