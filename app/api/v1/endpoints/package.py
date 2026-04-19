@@ -51,7 +51,8 @@ def save_package(payload: PackageCreate, emp_id: str = Query(...), db: Session =
         # Create new package
         new_pkg = Package(
             name=payload.name,
-            items=normalize_items(payload.items)
+            items=normalize_items(payload.items),
+            is_active=True 
         )
         db.add(new_pkg)
         db.flush()
@@ -87,7 +88,10 @@ def update_package(package_id: int, payload: PackagePatch, emp_id: str = Query(.
             pkg.items = pkg.items + new_items
             if new_items:
                 updated_fields.append(f"Added items: {new_items}")
-
+         # ✅ NEW: Active/Inactive toggle
+        if payload.is_active is not None:
+            updated_fields.append(f"is_active: {pkg.is_active} → {payload.is_active}")
+            pkg.is_active = payload.is_active
         db.flush()
 
         log_action(db, emp_id=emp_id, action=f"Updated package {pkg.name}: {', '.join(updated_fields)}")

@@ -12,10 +12,12 @@ class PackageCreate(PackageBase):
 
 class PackageRead(PackageBase):
     id: int
+    is_active: bool | None = None 
 
     class Config:
         from_attributes = True
 
 class PackagePatch(BaseModel):
     name: str | None = None
-    items: List[Any] | None = None        
+    items: List[Any] | None = None      
+    is_active: bool | None = None   

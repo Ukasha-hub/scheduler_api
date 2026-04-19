@@ -13,6 +13,8 @@ from .resourcespace import router as resourcespace_router
 from .razuna import router as razuna_router 
 from .scheduler import router as scheduler_router 
 from .media import router as media_router 
+from .resourcespace_media import router as resourcespace_media_router 
+from .resourcespace_metadata import router as resourcespace_metadata_router 
 
 
 
@@ -31,3 +33,5 @@ router.include_router(resourcespace_router , prefix="/resourcespace", tags=["res
 router.include_router(razuna_router , prefix="/razuna", tags=["razuna"])
 router.include_router(scheduler_router , prefix="/scheduler", tags=["Scheduler"])
 router.include_router(media_router , prefix="/media", tags=["Media"])
+router.include_router(resourcespace_media_router , prefix="/resourcespace_media", tags=["ResourceSpace Media"])
+router.include_router(resourcespace_metadata_router , prefix="/resourcespace_metadata", tags=["ResourceSpace Metadata"])

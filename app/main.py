@@ -12,8 +12,7 @@ origins = [
     "http://localhost:3001",
     "http://172.16.9.132:3000", 
     "http://172.16.9.132:3001",  # or your frontend URL
-    "ws://172.16.9.132:8081",     # WebSocket protocol
-    "ws://localhost:8081",
+    
 ]
 
 app.add_middleware(
