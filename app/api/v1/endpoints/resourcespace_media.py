@@ -34,6 +34,7 @@ def get_resources():
         formatted.append({
             "id": res.get("ref"),
             "title": res.get("field8") or res.get("name"),  # adjust if needed
+            "creation_date": res.get("creation_date")
         })
 
     return {
