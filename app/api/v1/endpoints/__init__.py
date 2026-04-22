@@ -15,6 +15,7 @@ from .scheduler import router as scheduler_router
 from .media import router as media_router 
 from .resourcespace_media import router as resourcespace_media_router 
 from .resourcespace_metadata import router as resourcespace_metadata_router 
+from .rate_agreement import router as rate_agreement_router 
 
 
 
@@ -35,3 +36,4 @@ router.include_router(scheduler_router , prefix="/scheduler", tags=["Scheduler"]
 router.include_router(media_router , prefix="/media", tags=["Media"])
 router.include_router(resourcespace_media_router , prefix="/resourcespace_media", tags=["ResourceSpace Media"])
 router.include_router(resourcespace_metadata_router , prefix="/resourcespace_metadata", tags=["ResourceSpace Metadata"])
+router.include_router(rate_agreement_router , prefix="/rate_agreement", tags=["Rate Agreement"])

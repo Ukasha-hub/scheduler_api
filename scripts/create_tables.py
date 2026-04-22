@@ -11,6 +11,7 @@ from app.models.package import Package
 from app.models.schedulerSettings import Scheduler 
 from app.models.history import History 
 from app.models.scheduler import Scheduler
+from app.models.rate_agreement import RateAgreement
 
 # This will create the table(s) in PostgreSQL
 Base.metadata.create_all(bind=engine)
