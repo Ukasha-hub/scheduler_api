@@ -205,14 +205,16 @@ async def sse_events(request: Request, date: date = None):
 @router.get("/", response_model=List[SchedulerRead])
 def list_schedulers(
     date: date,
+    include_soft_deleted: bool = Query(False, description="Include rows with duration 00:00:00:00"),
     db: Session = Depends(get_db)
 ):
-    return (
-        db.query(Scheduler)
-        .filter(Scheduler.start_date.cast(Date) == date)
-        .order_by(Scheduler.start_date)
-        .all()
-    )
+    query = db.query(Scheduler).filter(Scheduler.start_date.cast(Date) == date)
+    
+    # Filter out soft-deleted rows (duration = "00:00:00:00") unless explicitly requested
+    if not include_soft_deleted:
+        query = query.filter(Scheduler.duration != "00:00:00:00")
+    
+    return query.order_by(Scheduler.start_date).all()
 
 @router.get("/{scheduler_id}", response_model=SchedulerRead)
 def get_scheduler(scheduler_id: int, db: Session = Depends(get_db)):
@@ -422,6 +424,55 @@ def delete_scheduler_by_table_id(
         thread.start()
 
         return {"success": True}
+
+    return execute_with_table_lock(
+        db=db,
+        table_name="scheduler",
+        operation=operation,
+    )
+
+# Add this new endpoint for soft delete
+@router.delete("/soft/{table_id}")
+def soft_delete_scheduler_by_table_id(
+    table_id: int,
+    emp_id: str = Query(...),
+    action: str = Query(None),
+    db: Session = Depends(get_db)
+):
+    """Soft delete a row by setting duration to 00:00:00:00"""
+    def operation():
+        obj = db.query(Scheduler).filter(Scheduler.table_id == table_id).first()
+        if not obj:
+            raise HTTPException(status_code=404, detail="Scheduler not found")
+        
+        # Set duration to 00:00:00:00 instead of deleting
+        obj.duration = "00:00:00:00"
+        db.flush()
+        
+        row_date = obj.start_date.date() if obj.start_date else None
+
+        log_action(
+            db,
+            emp_id=emp_id,
+            action=action or f"Soft deleted scheduler {table_id}"
+        )
+        
+        # Broadcast the soft deletion
+        import threading
+        def broadcast_in_thread():
+            asyncio.run(sse_manager.broadcast(
+                "scheduler_soft_deleted",
+                {
+                    "table_id": table_id,
+                    "date": row_date.isoformat() if row_date else None
+                },
+                row_date
+            ))
+        
+        thread = threading.Thread(target=broadcast_in_thread)
+        thread.start()
+
+        return {"success": True, "soft_deleted": True, "table_id": table_id}
 
     return execute_with_table_lock(
         db=db,
