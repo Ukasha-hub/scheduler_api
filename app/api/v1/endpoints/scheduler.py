@@ -340,7 +340,7 @@ async def sync_day_scheduler(  # Make this async
   
 
 @router.put("/{table_id}", response_model=SchedulerRead)
-def update_scheduler_by_table_id(
+async def update_scheduler_by_table_id(  # Make this async
     table_id: int,
     payload: SchedulerUpdate,
     emp_id: str = Query(...),
@@ -362,39 +362,37 @@ def update_scheduler_by_table_id(
             action=f"Updated scheduler {table_id}"
         )
         
-        # Broadcast the update in a thread
-        import threading
-        def broadcast_in_thread():
-            asyncio.run(sse_manager.broadcast(
-                "scheduler_updated",
-                {
-                    "table_id": table_id,
-                    "changes": payload.model_dump(exclude_unset=True),
-                    "data": {
-                        "table_id": obj.table_id,
-                        "program": obj.program,
-                        "type": obj.type,
-                        "duration": obj.duration,
-                        "start_date": obj.start_date.isoformat() if obj.start_date else None,
-                        "end_date": obj.end_date.isoformat() if obj.end_date else None,
-                    }
-                },
-                obj.start_date.date() if obj.start_date else None
-            ))
-        
-        thread = threading.Thread(target=broadcast_in_thread)
-        thread.start()
-
         return obj
 
-    return execute_with_table_lock(
+    obj = execute_with_table_lock(
         db=db,
         table_name="scheduler",
         operation=operation,
     )
+    
+    # Use asyncio.create_task instead of threading
+    asyncio.create_task(sse_manager.broadcast(
+        "scheduler_updated",
+        {
+            "table_id": table_id,
+            "changes": payload.model_dump(exclude_unset=True),
+            "data": {
+                "table_id": obj.table_id,
+                "program": obj.program,
+                "type": obj.type,
+                "duration": obj.duration,
+                "start_date": obj.start_date.isoformat() if obj.start_date else None,
+                "end_date": obj.end_date.isoformat() if obj.end_date else None,
+            }
+        },
+        obj.start_date.date() if obj.start_date else None
+    ))
+    
+    return obj
+   
 
 @router.delete("/{table_id}")
-def delete_scheduler_by_table_id(
+async def delete_scheduler_by_table_id(  # Make this async
     table_id: int,
     db: Session = Depends(get_db)
 ):
@@ -408,32 +406,29 @@ def delete_scheduler_by_table_id(
         db.delete(obj)
         db.flush()
         
-        # Broadcast the deletion in a thread
-        import threading
-        def broadcast_in_thread():
-            asyncio.run(sse_manager.broadcast(
-                "scheduler_deleted",
-                {
-                    "table_id": table_id,
-                    "date": row_date.isoformat() if row_date else None
-                },
-                row_date
-            ))
-        
-        thread = threading.Thread(target=broadcast_in_thread)
-        thread.start()
+        return {"success": True, "row_date": row_date}
 
-        return {"success": True}
-
-    return execute_with_table_lock(
+    result = execute_with_table_lock(
         db=db,
         table_name="scheduler",
         operation=operation,
     )
+    
+    # Use asyncio.create_task instead of threading
+    asyncio.create_task(sse_manager.broadcast(
+        "scheduler_deleted",
+        {
+            "table_id": table_id,
+            "date": result["row_date"].isoformat() if result["row_date"] else None
+        },
+        result["row_date"]
+    ))
+
+    return result
 
 # Add this new endpoint for soft delete
 @router.delete("/soft/{table_id}")
-def soft_delete_scheduler_by_table_id(
+async def soft_delete_scheduler_by_table_id(  # Make this async
     table_id: int,
     emp_id: str = Query(...),
     action: str = Query(None),
@@ -445,7 +440,6 @@ def soft_delete_scheduler_by_table_id(
         if not obj:
             raise HTTPException(status_code=404, detail="Scheduler not found")
         
-        # Set duration to 00:00:00:00 instead of deleting
         obj.duration = "00:00:00:00"
         db.flush()
         
@@ -457,25 +451,22 @@ def soft_delete_scheduler_by_table_id(
             action=action or f"Soft deleted scheduler {table_id}"
         )
         
-        # Broadcast the soft deletion
-        import threading
-        def broadcast_in_thread():
-            asyncio.run(sse_manager.broadcast(
-                "scheduler_soft_deleted",
-                {
-                    "table_id": table_id,
-                    "date": row_date.isoformat() if row_date else None
-                },
-                row_date
-            ))
-        
-        thread = threading.Thread(target=broadcast_in_thread)
-        thread.start()
+        return {"success": True, "soft_deleted": True, "table_id": table_id, "row_date": row_date}
 
-        return {"success": True, "soft_deleted": True, "table_id": table_id}
-
-    return execute_with_table_lock(
+    result = execute_with_table_lock(
         db=db,
         table_name="scheduler",
         operation=operation,
     )
+    
+    # Use asyncio.create_task instead of threading
+    asyncio.create_task(sse_manager.broadcast(
+        "scheduler_soft_deleted",
+        {
+            "table_id": table_id,
+            "date": result["row_date"].isoformat() if result["row_date"] else None
+        },
+        result["row_date"]
+    ))
+
+    return result

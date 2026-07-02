@@ -16,6 +16,9 @@ from .media import router as media_router
 from .resourcespace_media import router as resourcespace_media_router 
 from .resourcespace_metadata import router as resourcespace_metadata_router 
 from .rate_agreement import router as rate_agreement_router 
+from .backup import router as backup_router
+from .playlist import router as playlist_router
+from .archive import router as archive_router
 
 
 
@@ -37,3 +40,6 @@ router.include_router(media_router , prefix="/media", tags=["Media"])
 router.include_router(resourcespace_media_router , prefix="/resourcespace_media", tags=["ResourceSpace Media"])
 router.include_router(resourcespace_metadata_router , prefix="/resourcespace_metadata", tags=["ResourceSpace Metadata"])
 router.include_router(rate_agreement_router , prefix="/rate_agreement", tags=["Rate Agreement"])
+router.include_router(backup_router , prefix="", tags=["Backup"])
+router.include_router(playlist_router , prefix="/playlist", tags=["playlist"])
+router.include_router(archive_router , prefix="/archive", tags=["archive"])

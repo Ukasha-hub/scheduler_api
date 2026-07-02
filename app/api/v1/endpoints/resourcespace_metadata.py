@@ -6,11 +6,11 @@ from fastapi import APIRouter, HTTPException
 
 router = APIRouter()
 
-PRIVATE_KEY = "1fbbd031191aa09570453f06e0b20d0b2556765899b57363164a8ef32a236072"
+PRIVATE_KEY = "691527108155802fad51a2b4dd8f26e943d4b231ff6747101a2603e6780870f4"
 USER = "admin"
-BASE_URL = "http://172.31.10.53/resourcespace/api/"
+BASE_URL = "http://172.16.9.132/resourcespace/api/"
 
-VIDEO_EXTENSIONS = ["mp4", "mov", "avi", "mkv", "webm"]
+VIDEO_EXTENSIONS = ["mp4", "mov", "avi", "mkv", "webm", "mxf"]
 
 
 def generate_signature(query: str):
@@ -66,6 +66,7 @@ async def get_resourcespace_metadata(ref: int):
         raise HTTPException(status_code=404, detail="Resource not found")
 
     file_extension = res_data.get("file_extension")
+   
 
     # 2️⃣ Get file URL
     file_url = None
@@ -90,7 +91,7 @@ async def get_resourcespace_metadata(ref: int):
 
     if file_extension and file_extension.lower() in VIDEO_EXTENSIONS:
         metadata = await run_ffprobe_async(file_url)
-
+    
     if metadata:
         format_info = metadata.get("format", {})
         streams = metadata.get("streams", [])
