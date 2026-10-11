@@ -383,6 +383,8 @@ async def update_scheduler_by_table_id(  # Make this async
                 "duration": obj.duration,
                 "start_date": obj.start_date.isoformat() if obj.start_date else None,
                 "end_date": obj.end_date.isoformat() if obj.end_date else None,
+                "updated": obj.updated.isoformat() if obj.updated else None,
+                "updatedby": obj.updatedby,
             }
         },
         obj.start_date.date() if obj.start_date else None
