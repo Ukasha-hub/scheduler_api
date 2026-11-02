@@ -6,9 +6,9 @@ from fastapi import APIRouter, HTTPException, Query
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-PRIVATE_KEY = "691527108155802fad51a2b4dd8f26e943d4b231ff6747101a2603e6780870f4"
+PRIVATE_KEY = "2baf70b3931b509c9bc5c7333d913d7eb1ed7a0b5b5aff72adaec9e373298211"
 USER = "admin"
-BASE_URL = "http://172.16.9.132/resourcespace/api/"
+BASE_URL = "http://172.31.10.1/resourcespace/api/"
 
 
 def generate_signature(query: str):

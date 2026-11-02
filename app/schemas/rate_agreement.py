@@ -4,31 +4,31 @@ from datetime import datetime
 
 
 class RateAgreementBase(BaseModel):
-    rate_agreementNo: int
-    agent_code: str
-    agent_name: str
+    rate_agreementNo: Optional[int] = None
+    agent_code: Optional[str] = None
+    agent_name: Optional[str] = None
 
-    startDate: Optional[datetime]
-    endDate: datetime
-    approveDate: datetime
+    startDate: Optional[datetime] = None
+    endDate: Optional[datetime] = None
+    approveDate: Optional[datetime] = None
 
-    rate_agreementLine_ID: int
+    rate_agreementLine_ID: Optional[int] = None
 
-    timeslot: str
-    positionName: Optional[str]
-    priority: Optional[str]
-    program: Optional[str]
-    timeBand: Optional[str]
+    timeslot: Optional[str] = None
+    positionName: Optional[str] = None
+    priority: Optional[str] = None
+    program: Optional[str] = None
+    timeBand: Optional[str] = None
 
-    rate: float
-    adType: str
-    episode_no: int
+    rate: Optional[float] = None
+    adType: Optional[str] = None
+    episode_no: Optional[int] = None
 
-    limit1: float
-    type: str
+    limit1: Optional[float] = None
+    type: Optional[str] = None
 
-    lineStartDate: datetime
-    lineEndDate: datetime
+    lineStartDate: Optional[datetime] = None
+    lineEndDate: Optional[datetime] = None
 
 
 class RateAgreementCreate(RateAgreementBase):
@@ -39,4 +39,4 @@ class RateAgreementResponse(RateAgreementBase):
     id: int
 
     class Config:
-        from_attributes = True  # for SQLAlchemy (Pydantic v2)
+        from_attributes = True  # SQLAlchemy support (Pydantic v2)
